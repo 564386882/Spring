@@ -122,35 +122,35 @@ public class Test {
 <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.46</version>
+            <version>1.2.80</version>
 </dependency>
 ```
 
 
 
 ```java
-   /**
-     *
-     1.需要先定义一个convert转换消息的对象；
-     2.添加fastjson的配置信息，比如是否要格式化返回的json数据
-     3.在convert中添加配置信息
-     4.将convert添加到converters中
-     */
-   @Bean
+/**
+ * fastJson替换JackJson
+ */
+@Configuration
+public class HttpConverterConfig {
+    @Bean
     public HttpMessageConverters fastJsonHttpMessageConverters() {
-
+        // 1.定义一个converters转换消息的对象
         FastJsonHttpMessageConverter fastConverter = new FastJsonHttpMessageConverter();
-
+        // 2.添加fastjson的配置信息，比如: 是否需要格式化返回的json数据
         FastJsonConfig fastJsonConfig = new FastJsonConfig();
-
         fastJsonConfig.setSerializerFeatures(SerializerFeature.PrettyFormat);
-
+        // 3.在converter中添加配置信息
         fastConverter.setFastJsonConfig(fastJsonConfig);
-
-        HttpMessageConverter<?> converter = fastConverter;
-
-        return new HttpMessageConverters(converter);
-
+        //处理中文乱码问题
+        List<MediaType> oFastMediaTypeList = new ArrayList<>();
+        oFastMediaTypeList.add(MediaType.APPLICATION_JSON_UTF8);
+        fastConverter.setSupportedMediaTypes(oFastMediaTypeList);
+        // 4.将converter赋值给HttpMessageConverter
+	    // 5.返回HttpMessageConverters对象
+        return new HttpMessageConverters(fastConverter);
     }
+}
 ```
 
