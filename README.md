@@ -51,3 +51,5 @@ public class Test {
 ### @JsonField
 
 源于fastjson，需要额外引入包，请求和响应均可使用(application/json)
+
+还可用于字段不匹配的转换映射
