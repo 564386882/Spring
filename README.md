@@ -4,15 +4,73 @@
 
 ### @JsonFormat
 
-源于Jackson，需要引入对应包
+源于Jackson，springboot默认序列化
 
 #### 请求接收
 
 <font color='red'>**用于`content-type为json`的请求参数时间格式化**</font>
 
-将前端传入时间，如`2022-05-18 11:00:00`转换为时间格式
+将前端传入时间，如`2022-05-18 11:00:00或者时间戳`转换为时间格式，需要注意的是：如果不是时间戳，需要保持入参和pattern的格式一致；对于时间戳，不能接收字符串形式的时间戳，可以接收数字类型时间戳
 
-`@JsonFormat(pattern = “yyyy-MM-dd HH:mm:ss”)`
+`@JsonField对上述情况都能支持`
+
+##### 踩坑1
+
+请求
+
+```json
+{
+	"startTime":"2022-05-18",
+    "endTime":"2022-05-18"
+}
+```
+
+接收
+
+```java
+@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone = "GMT+8")
+private Date startTime;
+```
+
+异常
+
+无法转换成带时分秒格式的
+
+`Cannot deserialize value of type java.util.Date from String "2022-05-18": expected format "yyyy-MM-dd HH:mm:ss";`
+
+**如果请求的是"2020-05-18 11:00:00" 接收的是 pattern = "yyyy-MM-dd" 是可以接收成功的**
+
+**如果不配置@JsonFormat也是可以接收成功的，但是响应格式就需要另寻他法**
+
+
+
+##### 踩坑2
+
+请求
+
+```json
+{
+	"startTime":"1652716800000",
+    "endTime":"2022-05-18"
+}
+```
+
+接收
+
+```java
+@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone = "GMT+8")
+private Date startTime;
+```
+
+异常
+
+无法转换字符串类型的时间戳
+
+`Cannot deserialize value of type java.util.Date from String "1652716800000": expected format "yyyy-MM-dd HH:mm:ss";`
+
+**如果是数字类型的时间戳可以转换成功**
+
+
 
 #### 请求响应
 
@@ -48,8 +106,51 @@ public class Test {
 
 <font color = 'red'>**如果传入时间格式非对应格式 如 yyyy/MM/dd HH/mm/ss 或者 yyyy-MM-dd之类的非对应格式， 则会解析失败**</font>
 
+
+
 ### @JsonField
 
-源于fastjson，需要额外引入包，请求和响应均可使用(application/json)
+源于fastjson，需要额外引入包并将其配置为默认的Json转换器，否则只能通过JSON、JSONObject进行序列化
+
+请求和响应均可使用(application/json)
 
 还可用于字段不匹配的转换映射
+
+<font color='red'>**如果没有配置转换器，则还是使用默认的jackson进行请求响应**</font>
+
+```xml
+<dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.46</version>
+</dependency>
+```
+
+
+
+```java
+   /**
+     *
+     1.需要先定义一个convert转换消息的对象；
+     2.添加fastjson的配置信息，比如是否要格式化返回的json数据
+     3.在convert中添加配置信息
+     4.将convert添加到converters中
+     */
+   @Bean
+    public HttpMessageConverters fastJsonHttpMessageConverters() {
+
+        FastJsonHttpMessageConverter fastConverter = new FastJsonHttpMessageConverter();
+
+        FastJsonConfig fastJsonConfig = new FastJsonConfig();
+
+        fastJsonConfig.setSerializerFeatures(SerializerFeature.PrettyFormat);
+
+        fastConverter.setFastJsonConfig(fastJsonConfig);
+
+        HttpMessageConverter<?> converter = fastConverter;
+
+        return new HttpMessageConverters(converter);
+
+    }
+```
+
